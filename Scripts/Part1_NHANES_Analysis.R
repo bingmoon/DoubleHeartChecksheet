@@ -478,3 +478,54 @@ cat(" 1. DH_Part1_Step4_Cox_Results.csv (核心数据表格，可直接导入 Ex
 cat(" 2. DH_Part1_Step4_Cox_ForestPlot.pdf (单页完美森林图)\n")
 cat(" 3. DH_Part1_Step4_KM_SurvivalCurve.pdf (高辨识度双色生存曲线)\n")
 cat("==============================================================================\n")
+
+# ==============================================================================
+# 项目名称: Double Heart (DH)
+# 补充模块: 生成 SCI 论文级基线特征表 (Table 1)
+# ==============================================================================
+
+# 1. 环境初始化
+setwd("/Users/bing/DH")
+
+# 检查并安装强大的 tableone 包（专为医学论文 Table 1 设计）
+if (!require("tableone")) install.packages("tableone")
+library(tableone)
+library(dplyr)
+
+cat(">>> 1. 正在载入带有风险分层的终极队列数据...\n")
+DH_Data <- readRDS("DH_Step4_FinalData_with_Risk.rds")
+
+# 2. 定义 Table 1 需要展示的变量
+# 包含：人口学指标、代谢指标、核心心理预警靶点得分，以及生存结局
+vars_to_summarize <- c("Age", "Gender", "BMI", 
+                       "DPQ070", "DPQ030", "DPQ040", 
+                       "PHQ9_Total", "Survival_Months", "CVD_Death")
+
+# 定义哪些变量是分类变量 (Categorical variables)
+categorical_vars <- c("Gender", "CVD_Death")
+
+# 3. 构建 Table 1 对象
+# 这里我们选择按照 "Risk_Group" (低风险 vs 高风险) 进行分组对比，这是顶刊最喜欢的展示方式
+cat(">>> 2. 正在按高低心理风险分组计算基线特征与 P 值...\n")
+table1_obj <- CreateTableOne(vars = vars_to_summarize, 
+                             factorVars = categorical_vars, 
+                             strata = "Risk_Group", 
+                             data = DH_Data, 
+                             addOverall = TRUE) # 同时保留整体队列 (Overall) 的统计
+
+# 4. 格式化输出
+# 连续变量非正态分布时，输出中位数和四分位距 (非必须，这里按标准均值±标准差输出)
+table1_printed <- print(table1_obj, 
+                        showAllLevels = TRUE, 
+                        quote = FALSE, 
+                        noSpaces = TRUE, 
+                        printToggle = FALSE)
+
+# 5. 导出为 CSV 文件供直接插入论文
+write.csv(table1_printed, file = "DH_Part1_Table1_BaselineCharacteristics.csv")
+
+cat("==============================================================================\n")
+cat("SUCCESS! Table 1 (基线特征表) 已成功生成！\n")
+cat("文件已保存为: /Users/bing/DH/DH_Part1_Table1_BaselineCharacteristics.csv\n")
+cat("您可以直接使用 Excel 打开并排版到您的 LaTeX 文档中。\n")
+cat("==============================================================================\n")
